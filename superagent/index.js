@@ -6,7 +6,7 @@ const crypto = require('crypto');
 let md5 = crypto.createHash('md5');
 let uniqueId = md5.update(machineIdSync()).digest('hex'); // 获取机器唯一识别码并MD5，方便机器人上下文关联
 const ONE = 'http://wufazhuce.com/'; // ONE的web版网站
-const TXHOST = 'http://api.tianapi.com/txapi/'; // 天行host
+const TXHOST = 'http://api.tianapi.com/'; // 天行host
 const TULINGAPI = 'http://www.tuling123.com/openapi/api'; // 图灵1.0接口api
 
 async function getOne() {
@@ -91,7 +91,7 @@ async function getTuLingReply(word) {
 
 // 天行聊天机器人
 async function getReply(word) {
-    let url = TXHOST + 'robot/';
+    let url = TXHOST + 'robot/index';
     let content = await superagent.req({
         url, method: 'GET', params: {
             key: config.TXAPIKEY,

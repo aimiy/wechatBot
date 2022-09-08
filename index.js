@@ -54,7 +54,10 @@ async function onMessage(msg) {
   if (room && isText) {
     // 如果是群消息 目前只处理文字消息
     const topic = await room.topic();
-    console.log(`群名: ${topic} 发消息人: ${await contact.name()} 内容: ${content}`);
+    if (config.GROUP.findIndex(item => item == topic) > -1) {
+      console.log(`群名: ${topic} 发消息人: ${await contact.name()} 内容: ${content}`);
+      room.say(content);
+    }
   } else if (isText) {
     // 如果非群消息 目前只处理文字消息
     console.log(`发消息人: ${alias} 消息内容: ${content}`);
@@ -111,7 +114,7 @@ async function initDay() {
 
     // 你可以修改下面的 str 来自定义每日说的内容和格式
     // PS: 如果需要插入 emoji(表情), 可访问 "https://getemoji.com/" 复制插入
-    let str = `${today}\n我们在一起的第${memorialDay}天\n\n元气满满的一天开始啦,要开心噢^_^\n\n今日天气\n${weather.weatherTips}\n${weather.todayWeather}\n每日一句:\n${one}\n\n每日土味情话：\n${sweetWord}\n\n————————最爱你的我`;
+    let str = `${today}\n今日天气\n${weather.weatherTips}\n${weather.todayWeather}\n每日一句:\n${one}\n\n每日土味情话：\n${sweetWord}\n\n`;
     try {
       logMsg = str;
       await delay(2000);
