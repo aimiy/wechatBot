@@ -26,6 +26,23 @@ async function getOne() {
     }
 }
 
+async function getDujitang() {
+    // 获取毒鸡汤
+    let url = TXHOST + 'dujitang/index';
+    try {
+        let content = await superagent.req({url: url, method: 'GET', params: {
+            key: config.TXAPIKEY,
+        }});
+        if (content.code === 200) {
+            let str = content.newslist[0].content;
+            console.info('获取毒鸡汤成功', str);
+            return str;
+        }
+    } catch (err) {
+        console.log('获取毒鸡汤出错', err);
+        return err;
+    }
+}
 async function getTXweather() {
     // 获取天行天气
     let url = TXHOST + 'tianqi/';
@@ -172,6 +189,7 @@ async function getRubbishType(word) {
 
 module.exports = {
     getOne,
+    getDujitang,
     getTXweather,
     getReply,
     getSweetWord,
