@@ -42,7 +42,8 @@ function onLogout(user) {
 }
 var infoLog = {
 }
-db.getDB("moyu").then(res => {
+db.getDB("moyu.json").then(res => {
+  console.log("读取数据库：",JSON.stringify(res))
   infoLog = res
 })
 
@@ -98,6 +99,7 @@ async function onMessage(msg) {
             try {
               await delay(2000);
               await room.say("：" + reply);
+              infoLog[roomAlias] -= 1
             } catch (e) {
               console.error(e);
             }
