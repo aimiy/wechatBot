@@ -68,7 +68,7 @@ async function onMessage(msg) {
       }
       console.log(`群名: ${topic} 发消息人: ${roomAlias}(${alias}) 内容: ${content}`);
       let infoLog = await Moyu.Get({ topic: topic, date: dbToday })
-      if(!infoLog){
+      if (!infoLog) {
         infoLog = {}
       }
       if (!infoLog[roomAlias]) {
@@ -107,11 +107,22 @@ async function onMessage(msg) {
         } else {
           let huifu;
           switch (content) {
-            case "今日排名":
-            case "今日排行":
+            case "今日排名"==content:
+            case "今日排行"==content:
+            case /摸鱼/.test(content):
               let sweetWord = await superagent.getSweetWord();
+              let keys = Object.keys(infoLog);
+              for (let i = 0; i < keys.length; i++) {
+                for (let j = 0; j < keys.length - 1 - i; j++) {
+                  if (infoLog[keys[j]] < infoLog[keys[j + 1]]) {
+                    let tempKey = keys[j + 1];
+                    keys[j + 1] = keys[j]
+                    keys[j] = tempKey;
+                  }
+                }
+              }
               let moyu = `${today}\n今日摸鱼排行：\n`;
-              for (let key in infoLog) {
+              for (let key of keys) {
                 moyu += `@${key}：累计摸鱼${infoLog[key]}次!\n`
               }
               moyu += `\n`
