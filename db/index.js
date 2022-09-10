@@ -3,9 +3,9 @@ const fs = require('fs');
 const path = require('path')
 const untils = require('../utils/index');
 
-let today = untils.formatDay(new Date()); //获取今天的日期
 
 function getDB(fileName) {
+    let today = untils.formatDay(new Date()); //获取今天的日期
     let dir = path.join(__dirname, fileName)
     return new Promise(resolve => {
         fs.readFile(dir, 'utf8', (err, data) => {
@@ -24,6 +24,7 @@ function getDB(fileName) {
 }
 function setDB(fileName, newData) {
     let dir = path.join(__dirname, fileName)
+    let today = untils.formatDay(new Date()); //获取今天的日期
     fs.readFile(dir, 'utf8', (err, data) => {
         if (err) {
             console.log(err)

@@ -46,6 +46,9 @@ db.getDB("moyu.json").then(res => {
   console.log("读取数据库：",JSON.stringify(res))
   infoLog = res
 })
+setInterval(() => {
+  db.setDB("moyu.json", infoLog)
+},30*60*1000)
 
 // 监听对话
 async function onMessage(msg) {
@@ -76,7 +79,7 @@ async function onMessage(msg) {
       } else {
         infoLog[roomAlias] += 1
       }
-      db.setDB("moyu.json", infoLog)
+    
       // 如果开启自动聊天且已经指定了智能聊天的对象才开启机器人聊天\
       if (content) {
         if (content.substr(0, 2) == '三猫') {
@@ -111,10 +114,10 @@ async function onMessage(msg) {
               let sweetWord = await superagent.getSweetWord();
               let moyu = `${today}\n今日摸鱼排行：\n`;
               for (let key in infoLog) {
-                moyu += `@${key}：累计摸鱼${infoLog[key]}次!\n\n`
+                moyu += `@${key}：累计摸鱼${infoLog[key]}次!\n`
               }
+              moyu += `\n`
               moyu += sweetWord
-              console.log(moyu)
               huifu = moyu;
               break;
           }
