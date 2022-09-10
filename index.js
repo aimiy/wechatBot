@@ -7,8 +7,8 @@ const schedule = require('./schedule/index');
 const config = require('./config/index');
 const untils = require('./utils/index');
 const superagent = require('./superagent/index');
-const db = require('./db/index')
 
+const Moyu = require('./api/moyu')
 // 延时函数，防止检测出类似机器人行为操作
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -40,15 +40,6 @@ async function onLogin(user) {
 function onLogout(user) {
   console.log(`小助手${user} 已经登出`);
 }
-var infoLog = {
-}
-db.getDB("moyu.json").then(res => {
-  console.log("读取数据库：",JSON.stringify(res))
-  infoLog = res
-})
-setInterval(() => {
-  db.setDB("moyu.json", infoLog)
-},30*60*1000)
 
 // 监听对话
 async function onMessage(msg) {
@@ -60,6 +51,8 @@ async function onMessage(msg) {
   const isText = msg.type() === bot.Message.Type.Text;
 
   let today = await untils.formatDate(new Date()); //获取今天的日期
+
+  let dbToday = await untils.formatDay(new Date()); //获取今天的日期
 
   // if (msg.self()) {
   //   return;
@@ -74,12 +67,16 @@ async function onMessage(msg) {
         roomAlias = name;
       }
       console.log(`群名: ${topic} 发消息人: ${roomAlias}(${alias}) 内容: ${content}`);
+      let infoLog = await Moyu.Get({ topic: topic, date: dbToday })
+      if(!infoLog){
+        infoLog = {}
+      }
       if (!infoLog[roomAlias]) {
         infoLog[roomAlias] = 1
       } else {
         infoLog[roomAlias] += 1
       }
-    
+
       // 如果开启自动聊天且已经指定了智能聊天的对象才开启机器人聊天\
       if (content) {
         if (content.substr(0, 2) == '三猫') {
@@ -110,6 +107,7 @@ async function onMessage(msg) {
         } else {
           let huifu;
           switch (content) {
+            case "今日排名":
             case "今日排行":
               let sweetWord = await superagent.getSweetWord();
               let moyu = `${today}\n今日摸鱼排行：\n`;
@@ -131,6 +129,7 @@ async function onMessage(msg) {
           }
         }
       }
+      Moyu.Update({ topic: topic, date: dbToday, data: infoLog })
     }
   }
   // else if (isText) {

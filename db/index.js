@@ -1,4 +1,3 @@
-const { rejects } = require('assert');
 const fs = require('fs');
 const path = require('path')
 const untils = require('../utils/index');
