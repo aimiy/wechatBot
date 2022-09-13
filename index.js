@@ -64,21 +64,24 @@ async function onMessage(msg) {
     if (config.GROUP.findIndex(item => item == topic) > -1) {
       let roomAlias = await room.alias(contact)
       if (!roomAlias) {
-        roomAlias = name;
+        roomAlias = alias;
       }
       console.log(`群名: ${topic} 发消息人: ${roomAlias}(${alias}) 内容: ${content}`);
-      let infoLog = await Moyu.Get({ topic: topic, date: dbToday })
-      if (!infoLog) {
-        infoLog = {}
-      }
-      if (!infoLog[roomAlias]) {
-        infoLog[roomAlias] = 1
-      } else {
-        infoLog[roomAlias] += 1
-      }
 
       // 如果开启自动聊天且已经指定了智能聊天的对象才开启机器人聊天\
       if (content) {
+        if (content.substr(0, 1) == '：') {
+          return;
+        }
+        var infoLog = await Moyu.Get({ topic: topic, date: dbToday })
+        if (!infoLog) {
+          infoLog = {}
+        }
+        if (!infoLog[roomAlias]) {
+          infoLog[roomAlias] = 1
+        } else {
+          infoLog[roomAlias] += 1
+        }
         if (content.substr(0, 2) == '三猫') {
           let contactContent = content.replace('三猫', '');
           if (contactContent) {
@@ -99,16 +102,15 @@ async function onMessage(msg) {
             try {
               await delay(2000);
               await room.say("：" + reply);
-              infoLog[roomAlias] -= 1
             } catch (e) {
               console.error(e);
             }
           }
         } else {
           let huifu;
-          switch (content) {
-            case "今日排名"==content:
-            case "今日排行"==content:
+          switch (true) {
+            case "今日排名" == content:
+            case "今日排行" == content:
             case /摸鱼/.test(content):
               let sweetWord = await superagent.getSweetWord();
               let keys = Object.keys(infoLog);
@@ -139,8 +141,8 @@ async function onMessage(msg) {
             }
           }
         }
+        Moyu.Update({ topic: topic, date: dbToday, data: infoLog })
       }
-      Moyu.Update({ topic: topic, date: dbToday, data: infoLog })
     }
   }
   // else if (isText) {
@@ -192,7 +194,6 @@ async function initDay() {
       (await bot.Contact.find({ name: config.NICKNAME })) ||
       (await bot.Contact.find({ alias: config.NAME })); // 获取你要发送的联系人
     let one = await superagent.getOne(); //获取每日一句
-    let weather = await superagent.getTXweather(); //获取天气信息
     let today = await untils.formatDate(new Date()); //获取今天的日期
     let memorialDay = untils.getDay(config.MEMORIAL_DAY); //获取纪念日天数
     let sweetWord = await superagent.getSweetWord();
