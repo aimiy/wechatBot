@@ -64,7 +64,7 @@ async function onMessage(msg) {
     if (config.GROUP.findIndex(item => item == topic) > -1) {
       let roomAlias = await room.alias(contact)
       if (!roomAlias) {
-        roomAlias = alias;
+        roomAlias = name;
       }
       console.log(`群名: ${topic} 发消息人: ${roomAlias}(${alias}) 内容: ${content}`);
 
