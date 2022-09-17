@@ -41,6 +41,34 @@ function onLogout(user) {
   console.log(`小助手${user} 已经登出`);
 }
 
+async function dealCommonInfo(content) {
+  let today = await untils.formatDate(new Date()); //获取今天的日期
+  return new Promise(async (resolve, reject) => {
+    if (content.substr(0, 2) == '三猫') {
+      let contactContent = content.replace('三猫', '');
+      if (contactContent) {
+        let reply;
+        if (config.DEFAULTBOT == '0') {
+          // 天行聊天机器人逻辑
+          reply = await superagent.getReply(contactContent);
+          console.log('天行机器人回复：', reply);
+        } else if (config.DEFAULTBOT == '1') {
+          // 图灵聊天机器人
+          reply = await superagent.getTuLingReply(contactContent);
+          console.log('图灵机器人回复：', reply);
+        } else if (config.DEFAULTBOT == '2') {
+          // 天行对接的图灵聊
+          reply = await superagent.getTXTLReply(contactContent);
+          console.log('天行对接的图灵机器人回复：', reply);
+        }
+        resolve(reply)
+      }
+    } else {
+
+    }
+  })
+}
+
 // 监听对话
 async function onMessage(msg) {
   const contact = msg.talker(); // 发消息人
@@ -49,138 +77,81 @@ async function onMessage(msg) {
   const alias = await contact.alias() || await contact.name(); // 发消息人备注
   const name = await contact.name();
   const isText = msg.type() === bot.Message.Type.Text;
-
   let today = await untils.formatDate(new Date()); //获取今天的日期
-
   let dbToday = await untils.formatDay(new Date()); //获取今天的日期
 
+  // 忽略的消息判断
   // if (msg.self()) {
   //   return;
   // }
+  if (!content || content.substr(0, 1) == '：') {
+    return;
+  }
 
-  if (room && isText) {
-    // 如果是群消息 目前只处理文字消息
+  if (room) {
+    // 群消息 
     const topic = await room.topic();
-    if (config.GROUP.findIndex(item => item == topic) > -1) {
-      let roomAlias = await room.alias(contact)
-      if (!roomAlias) {
-        roomAlias = name;
-      }
-      console.log(`群名: ${topic} 发消息人: ${roomAlias}(${alias}) 内容: ${content}`);
+    if (config.GROUP.findIndex(item => item == topic) == -1) {
+      return
+    }
 
-      // 如果开启自动聊天且已经指定了智能聊天的对象才开启机器人聊天\
-      if (content) {
-        if (content.substr(0, 1) == '：') {
-          return;
+    let contactRoomAlias = await room.alias(contact)
+    if (!contactRoomAlias) {
+      contactRoomAlias = name;
+    }
+    console.log(`群名: ${topic} 发消息人: ${contactRoomAlias}(${alias}) 内容: ${content}`);
+    // 摸鱼统计
+    Moyu.AddCount({ topic: topic, date: dbToday, name: contactRoomAlias })
+    if (isText) {
+      // 文字消息处理
+      dealCommonInfo(content).then(async (reply) => {
+        try {
+          await delay(2000);
+          await room.say("：" + reply);
+        } catch (e) {
+          console.error(e);
         }
-        var infoLog = await Moyu.Get({ topic: topic, date: dbToday })
-        if (!infoLog) {
-          infoLog = {}
+      })
+
+      let huifu;
+      switch (true) {
+        case "今日排名" == content:
+        case "今日排行" == content:
+        case /摸鱼/.test(content):
+          let sweetWord = await superagent.getSweetWord();
+          huifu = `${today}\n今日摸鱼排行：\n`
+          huifu += await Moyu.GetReplyInfo({ topic: topic, date: dbToday })
+          huifu += `\n${sweetWord}`
+          break;
+      }
+      if (huifu) {
+        try {
+          await delay(2000);
+          await room.say("：" + huifu);
+        } catch (e) {
+          console.error(e);
         }
-        if (!infoLog[roomAlias]) {
-          infoLog[roomAlias] = 1
-        } else {
-          infoLog[roomAlias] += 1
-        }
-        if (content.substr(0, 2) == '三猫') {
-          let contactContent = content.replace('三猫', '');
-          if (contactContent) {
-            let reply;
-            if (config.DEFAULTBOT == '0') {
-              // 天行聊天机器人逻辑
-              reply = await superagent.getReply(contactContent);
-              console.log('天行机器人回复：', reply);
-            } else if (config.DEFAULTBOT == '1') {
-              // 图灵聊天机器人
-              reply = await superagent.getTuLingReply(contactContent);
-              console.log('图灵机器人回复：', reply);
-            } else if (config.DEFAULTBOT == '2') {
-              // 天行对接的图灵聊
-              reply = await superagent.getTXTLReply(contactContent);
-              console.log('天行对接的图灵机器人回复：', reply);
-            }
-            try {
-              await delay(2000);
-              await room.say("：" + reply);
-            } catch (e) {
-              console.error(e);
-            }
-          }
-        } else {
-          let huifu;
-          switch (true) {
-            case "今日排名" == content:
-            case "今日排行" == content:
-            case /摸鱼/.test(content):
-              let sweetWord = await superagent.getSweetWord();
-              let keys = Object.keys(infoLog);
-              for (let i = 0; i < keys.length; i++) {
-                for (let j = 0; j < keys.length - 1 - i; j++) {
-                  if (infoLog[keys[j]] < infoLog[keys[j + 1]]) {
-                    let tempKey = keys[j + 1];
-                    keys[j + 1] = keys[j]
-                    keys[j] = tempKey;
-                  }
-                }
-              }
-              let moyu = `${today}\n今日摸鱼排行：\n`;
-              for (let key of keys) {
-                moyu += `@${key}：累计摸鱼${infoLog[key]}次!\n`
-              }
-              moyu += `\n`
-              moyu += sweetWord
-              huifu = moyu;
-              break;
-          }
-          if (huifu) {
-            try {
-              await delay(2000);
-              await room.say("：" + huifu);
-            } catch (e) {
-              console.error(e);
-            }
-          }
-        }
-        Moyu.Update({ topic: topic, date: dbToday, data: infoLog })
       }
     }
+  } else {
+    // 如果非群消息 
+    if (config.FRIENDS.findIndex(item => item == alias) == -1) {
+      return;
+    }
+    if (isText) {
+      // 文字消息
+      console.log(`发消息人: ${alias}（${name}） 消息内容: ${content}`);
+      dealCommonInfo(content).then(async reply => {
+        try {
+          await delay(2000);
+          await contact.say("：" + reply);
+        } catch (e) {
+          console.error(e);
+        }
+      })
+
+    }
   }
-  // else if (isText) {
-  //   // 如果非群消息 目前只处理文字消息
-  //   console.log(`发消息人: ${alias} 消息内容: ${content}`);
-  //   if (content.substr(0, 1) == '?' || content.substr(0, 1) == '？') {
-  //     let contactContent = content.replace('?', '').replace('？', '');
-  //     if (contactContent) {
-  //       let res = await superagent.getRubbishType(contactContent);
-  //       await delay(2000);
-  //       await contact.say(res);
-  //     }
-  //   } else if (config.AUTOREPLY && config.AUTOREPLYPERSON.indexOf(alias) > -1) {
-  //     // 如果开启自动聊天且已经指定了智能聊天的对象才开启机器人聊天\
-  //     if (content) {
-  //       let reply;
-  //       if (config.DEFAULTBOT == '0') {
-  //         // 天行聊天机器人逻辑
-  //         reply = await superagent.getReply(content);
-  //         console.log('天行机器人回复：', reply);
-  //       } else if (config.DEFAULTBOT == '1') {
-  //         // 图灵聊天机器人
-  //         reply = await superagent.getTuLingReply(content);
-  //         console.log('图灵机器人回复：', reply);
-  //       } else if (config.DEFAULTBOT == '2') {
-  //         // 天行对接的图灵聊
-  //         reply = await superagent.getTXTLReply(content);
-  //         console.log('天行对接的图灵机器人回复：', reply);
-  //       }
-  //       try {
-  //         await delay(2000);
-  //         await contact.say(reply);
-  //       } catch (e) {
-  //         console.error(e);
-  //       }
-  //     }
-  //   }
-  // }
 }
 
 // 创建微信每日说定时任务
